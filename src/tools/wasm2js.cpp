@@ -18,6 +18,7 @@
 // wasm2js console tool
 //
 
+#include "exception.h"
 #include "wasm2js.h"
 #include "optimization-options.h"
 #include "pass.h"
@@ -963,7 +964,7 @@ int main(int argc, const char* argv[]) {
     input.size() >= suffix.size() &&
     input.compare(input.size() - suffix.size(), suffix.size(), suffix) == 0;
 
-  try {
+  B_TRY {
     // If the input filename ends in `.wasm`, then parse it in binary form,
     // otherwise assume it's a `*.wat` file and go from there.
     //
@@ -990,13 +991,13 @@ int main(int argc, const char* argv[]) {
       sexprBuilder =
         make_unique<SExpressionWasmBuilder>(wasm, *(*root)[0], options.profile);
     }
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     Fatal() << "error in parsing input";
-  } catch (std::bad_alloc&) {
+  }) B_CATCH (std::bad_alloc&, {
     Fatal() << "error in building module, std::bad_alloc (possibly invalid "
                "request for silly amounts of memory)";
-  }
+  })
 
   // TODO: Remove this restriction when wasm2js can handle multiple tables
   if (wasm.tables.size() > 1) {

@@ -66,8 +66,6 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   endif()
 endif()
 
-configure_file(config.h.in config.h)
-
 # Support functionality.
 
 function(add_compile_flag value)
@@ -189,6 +187,7 @@ if(BYN_ENABLE_LTO)
 endif()
 
 if(MSVC)
+  set(HAVE_THREADS ON)
   if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # multi-core build.
     add_compile_flag("/MP")
@@ -253,7 +252,12 @@ else()
 
   set(THREADS_PREFER_PTHREAD_FLAG ON)
   set(CMAKE_THREAD_PREFER_PTHREAD ON)
-  find_package(Threads REQUIRED)
+  find_package(Threads)
+  if(Threads_FOUND)
+    set(HAVE_THREADS ON)
+  else()
+    unset(HAVE_THREADS)
+  endif()
   if(NOT EMSCRIPTEN)
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
       # wasm doesn't allow for x87 floating point math
@@ -486,3 +490,5 @@ if(EMSCRIPTEN)
 endif()
 
 configure_file(scripts/binaryen-lit.in ${CMAKE_BINARY_DIR}/bin/binaryen-lit @ONLY)
+configure_file(config.h.in config.h)
+

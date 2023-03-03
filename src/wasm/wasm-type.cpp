@@ -18,12 +18,12 @@
 #include <array>
 #include <cassert>
 #include <map>
-#include <shared_mutex>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
 
+#include "mutex.h"
 #include "compiler-support.h"
 #include "support/hash.h"
 #include "support/insert_ordered.h"

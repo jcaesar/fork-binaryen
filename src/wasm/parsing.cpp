@@ -16,35 +16,38 @@
 
 #include "parsing.h"
 #include "ir/branch-utils.h"
+#include "exception.h"
 
 namespace wasm {
 
-void ParseException::dump(std::ostream& o) const {
+std::ostream& operator<<(std::ostream& o, const ParseException& exn) {
   Colors::magenta(o);
   o << "[";
   Colors::red(o);
   o << "parse exception: ";
   Colors::green(o);
-  o << text;
-  if (line != size_t(-1)) {
+  o << exn.text;
+  if (exn.line != size_t(-1)) {
     Colors::normal(o);
-    o << " (at " << line << ":" << col << ")";
+    o << " (at " << exn.line << ":" << exn.col << ")";
   }
   Colors::magenta(o);
   o << "]";
   Colors::normal(o);
+  return o;
 }
 
-void MapParseException::dump(std::ostream& o) const {
+std::ostream& operator<<(std::ostream& o, const MapParseException& exn) {
   Colors::magenta(o);
   o << "[";
   Colors::red(o);
   o << "map parse exception: ";
   Colors::green(o);
-  o << text;
+  o << exn.text;
   Colors::magenta(o);
   o << "]";
   Colors::normal(o);
+  return o;
 }
 
 // UniqueNameMapper
@@ -83,17 +86,17 @@ Name UniqueNameMapper::sourceToUnique(Name sName) {
     return DELEGATE_CALLER_TARGET;
   }
   if (labelMappings.find(sName) == labelMappings.end()) {
-    throw ParseException("bad label in sourceToUnique");
+    B_THROW1(ParseException, "bad label in sourceToUnique");
   }
   if (labelMappings[sName].empty()) {
-    throw ParseException("use of popped label in sourceToUnique");
+    B_THROW1(ParseException, "use of popped label in sourceToUnique");
   }
   return labelMappings[sName].back();
 }
 
 Name UniqueNameMapper::uniqueToSource(Name name) {
   if (reverseLabelMapping.find(name) == reverseLabelMapping.end()) {
-    throw ParseException("label mismatch in uniqueToSource");
+    B_THROW1(ParseException, "label mismatch in uniqueToSource");
   }
   return reverseLabelMapping[name];
 }

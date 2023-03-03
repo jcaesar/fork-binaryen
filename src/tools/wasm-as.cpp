@@ -18,6 +18,7 @@
 // wasm2asm console tool
 //
 
+#include "exception.h"
 #include "support/colors.h"
 #include "support/file.h"
 #include "wasm-io.h"
@@ -109,7 +110,7 @@ int main(int argc, const char* argv[]) {
   Module wasm;
   options.applyFeatures(wasm);
 
-  try {
+  B_TRY {
     if (options.debug) {
       std::cerr << "s-parsing..." << std::endl;
     }
@@ -119,10 +120,10 @@ int main(int argc, const char* argv[]) {
       std::cerr << "w-parsing..." << std::endl;
     }
     SExpressionWasmBuilder builder(wasm, *root[0], options.profile);
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     Fatal() << "error in parsing input";
-  }
+  })
 
   if (options.extra["validate"] != "none") {
     if (options.debug) {

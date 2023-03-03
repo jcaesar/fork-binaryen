@@ -329,13 +329,13 @@ private:
   // (that we can replace the expression with if replaceExpression is set).
   Flow precomputeExpression(Expression* curr, bool replaceExpression = true) {
     Flow flow;
-    try {
+    B_TRY {
       flow = PrecomputingExpressionRunner(
                getModule(), getValues, heapValues, replaceExpression)
                .visit(curr);
-    } catch (PrecomputingExpressionRunner::NonconstantException&) {
+    } B_CATCH (PrecomputingExpressionRunner::NonconstantException&, {
       return Flow(NONCONSTANT_FLOW);
-    }
+    })
     // If we are replacing the expression, then the resulting value must be of
     // a type we can emit a constant for.
     if (!flow.breaking() && replaceExpression &&

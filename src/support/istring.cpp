@@ -15,6 +15,7 @@
  */
 
 #include "istring.h"
+#include "mutex.h"
 
 namespace wasm {
 
@@ -51,8 +52,11 @@ std::string_view IString::interned(std::string_view s, bool reuse) {
   static std::mutex mutex;
 
   // A thread-local cache of strings to reduce contention.
-  thread_local static StringSet localStrings;
-
+# ifdef HAVE_THREADS
+  thread_local
+# endif
+  static StringSet localStrings;
+  
   auto [localIt, localInserted] = localStrings.insert(s);
   if (!localInserted) {
     // We already had a local copy of this string.

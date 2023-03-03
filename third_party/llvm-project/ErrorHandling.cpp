@@ -174,7 +174,7 @@ void llvm::report_bad_alloc_error(const char *Reason, bool GenCrashDiag) {
   // Don't call the normal error handler. It may allocate memory. Directly write
   // an OOM to stderr and abort.
   char OOMMessage[] = "LLVM ERROR: out of memory\n";
-  ssize_t written = ::write(2, OOMMessage, strlen(OOMMessage));
+  ssize_t written = ::fprintf(stderr, "%s", OOMMessage);
   (void)written;
   abort();
 #endif

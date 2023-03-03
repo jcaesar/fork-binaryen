@@ -28,6 +28,7 @@
 #include <sstream>
 #include <variant>
 
+#include "exception.h"
 #include "ir/intrinsics.h"
 #include "ir/module-utils.h"
 #include "support/bits.h"
@@ -2260,12 +2261,12 @@ public:
     return ExpressionRunner<SubType>::visitRefAs(curr);
   }
 
-  void trap(const char* why) override { throw NonconstantException(); }
+  void trap(const char* why) override { B_THROW0(NonconstantException); }
 
-  void hostLimit(const char* why) override { throw NonconstantException(); }
+  void hostLimit(const char* why) override { B_THROW0(NonconstantException); }
 
   virtual void throwException(const WasmException& exn) override {
-    throw NonconstantException();
+    B_THROW0(NonconstantException);
   }
 };
 
@@ -3580,9 +3581,9 @@ public:
   }
   Flow visitTry(Try* curr) {
     NOTE_ENTER("Try");
-    try {
+    B_TRY {
       return self()->visit(curr->body);
-    } catch (const WasmException& e) {
+    } B_CATCH (const WasmException& e, {
       // If delegation is in progress and the current try is not the target of
       // the delegation, don't handle it and just rethrow.
       if (scope->currDelegateTarget.is()) {
@@ -3624,7 +3625,7 @@ public:
       }
       // This exception is not caught by this try-catch. Rethrow it.
       throw;
-    }
+    })
   }
   Flow visitRethrow(Rethrow* curr) {
     for (int i = exceptionStack.size() - 1; i >= 0; i--) {

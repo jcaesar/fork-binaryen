@@ -3587,7 +3587,7 @@ switch (buf[0]) {
   default: goto parse_error;
 }
 parse_error:
-  throw ParseException(std::string(op), s.line, s.col);
+  B_THROW_DUMP(ParseException(std::string(op), s.line, s.col));
 #endif // INSTRUCTION_PARSER
 
 #ifdef NEW_INSTRUCTION_PARSER

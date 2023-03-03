@@ -18,11 +18,10 @@
 // Binaryen C API implementation
 //===============================
 
-#include <mutex>
-
 #include "binaryen-c.h"
 #include "cfg/Relooper.h"
 #include "ir/utils.h"
+#include "mutex.h"
 #include "pass.h"
 #include "shell-interface.h"
 #include "support/colors.h"
@@ -5520,14 +5519,14 @@ void BinaryenModuleSetFeatures(BinaryenModuleRef module,
 
 BinaryenModuleRef BinaryenModuleParse(const char* text) {
   auto* wasm = new Module;
-  try {
+  B_TRY {
     SExpressionParser parser(text);
     Element& root = *parser.root;
     SExpressionWasmBuilder builder(*wasm, *root[0], IRProfile::Normal);
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     Fatal() << "error in parsing wasm text";
-  }
+  })
   return wasm;
 }
 
@@ -5808,14 +5807,14 @@ BinaryenModuleRef BinaryenModuleRead(char* input, size_t inputSize) {
   std::vector<char> buffer(false);
   buffer.resize(inputSize);
   std::copy_n(input, inputSize, buffer.begin());
-  try {
+  B_TRY {
     // TODO: allow providing features in the C API
     WasmBinaryBuilder parser(*wasm, FeatureSet::MVP, buffer);
     parser.read();
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     Fatal() << "error in parsing wasm binary";
-  }
+  })
   return wasm;
 }
 
@@ -6294,13 +6293,13 @@ ExpressionRunnerRunAndDispose(ExpressionRunnerRef runner,
                               BinaryenExpressionRef expr) {
   auto* R = (CExpressionRunner*)runner;
   Expression* ret = nullptr;
-  try {
+  B_TRY {
     auto flow = R->visit(expr);
     if (!flow.breaking() && !flow.values.empty()) {
       ret = flow.getConstExpression(*R->getModule());
     }
-  } catch (CExpressionRunner::NonconstantException&) {
-  }
+  } B_CATCH (CExpressionRunner::NonconstantException&, {
+  })
   delete R;
   return ret;
 }

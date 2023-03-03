@@ -25,6 +25,7 @@
 #include <ostream>
 #include <type_traits>
 
+#include "exception.h"
 #include "ir/import-utils.h"
 #include "ir/module-utils.h"
 #include "parsing.h"
@@ -117,7 +118,7 @@ template<typename T, typename MiniT> struct LEB {
       T significant_payload = payload & shift_mask;
       if (significant_payload != payload) {
         if (!(std::is_signed<T>::value && last)) {
-          throw ParseException("LEB dropped bits only valid for signed LEB");
+          B_THROW1(ParseException, "LEB dropped bits only valid for signed LEB");
         }
       }
       value |= significant_payload << shift;
@@ -126,7 +127,7 @@ template<typename T, typename MiniT> struct LEB {
       }
       shift += 7;
       if (size_t(shift) >= sizeof(T) * 8) {
-        throw ParseException("LEB overflow");
+        B_THROW1(ParseException, "LEB overflow");
       }
     }
     // If signed LEB, then we might need to sign-extend. (compile should
@@ -138,7 +139,7 @@ template<typename T, typename MiniT> struct LEB {
         value <<= sext_bits;
         value >>= sext_bits;
         if (value >= 0) {
-          throw ParseException(
+          B_THROW1(ParseException,
             " LEBsign-extend should produce a negative value");
         }
       }

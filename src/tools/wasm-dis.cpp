@@ -18,6 +18,7 @@
 // wasm2asm console tool
 //
 
+#include "exception.h"
 #include "support/colors.h"
 #include "support/file.h"
 #include "wasm-io.h"
@@ -65,9 +66,9 @@ int main(int argc, const char* argv[]) {
   }
   Module wasm;
   options.applyFeatures(wasm);
-  try {
+  B_TRY {
     ModuleReader().readBinary(options.extra["infile"], wasm, sourceMapFilename);
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     std::cerr << '\n';
     if (options.debug) {
@@ -76,11 +77,11 @@ int main(int argc, const char* argv[]) {
     } else {
       Fatal() << "error parsing wasm (try --debug for more info)";
     }
-  } catch (MapParseException& p) {
+  }) B_CATCH (MapParseException& p, {
     p.dump(std::cerr);
     std::cerr << '\n';
     Fatal() << "error in parsing wasm source mapping";
-  }
+  })
 
   // TODO: Validation. However, validating would mean that users are forced to
   //       run with  wasm-dis -all  or such, to enable the features (unless the

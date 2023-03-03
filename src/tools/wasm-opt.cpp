@@ -274,9 +274,9 @@ int main(int argc, const char* argv[]) {
     reader.setDWARF(options.passOptions.debugInfo &&
                     !willRemoveDebugInfo(options.passes));
     reader.setProfile(options.profile);
-    try {
+    B_TRY {
       reader.read(inputFile, wasm, inputSourceMapFilename);
-    } catch (ParseException& p) {
+    } B_CATCH (ParseException& p, {
       p.dump(std::cerr);
       std::cerr << '\n';
       if (options.debug) {
@@ -285,14 +285,14 @@ int main(int argc, const char* argv[]) {
       } else {
         Fatal() << "error parsing wasm (try --debug for more info)";
       }
-    } catch (MapParseException& p) {
+    }) B_CATCH (MapParseException& p, {
       p.dump(std::cerr);
       std::cerr << '\n';
       Fatal() << "error parsing wasm source map";
     } catch (std::bad_alloc&) {
       Fatal() << "error building module, std::bad_alloc (possibly invalid "
                  "request for silly amounts of memory)";
-    }
+    })
 
     if (options.passOptions.validate) {
       if (!WasmValidator().validate(wasm, options.passOptions)) {

@@ -25,6 +25,7 @@
 #include <memory>
 
 #include "asmjs/shared-constants.h"
+#include "exception.h"
 #include "ir/global-utils.h"
 #include "ir/import-utils.h"
 #include "ir/literal-utils.h"
@@ -66,7 +67,7 @@ public:
     // Error on reads of imported globals.
     auto* global = wasm.getGlobal(curr->name);
     if (global->imported()) {
-      throw FailToEvalException(std::string("read from imported global ") +
+      B_THROW1(FailToEvalException, std::string("read from imported global ") +
                                 global->module.toString() + "." +
                                 global->base.toString());
     }
@@ -78,7 +79,7 @@ public:
     // TODO: Full dynamic table support. For now we stop evalling when we see a
     //       table.set. (To support this we need to track sets and add code to
     //       serialize them.)
-    throw FailToEvalException("table.set: TODO");
+    B_THROW1(FailToEvalException, "table.set: TODO");
   }
 };
 
@@ -202,13 +203,13 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
         auto* inst = it->second.get();
         auto* globalExport = inst->wasm.getExportOrNull(global->base);
         if (!globalExport) {
-          throw FailToEvalException(std::string("importGlobals: ") +
+          B_THROW1(FailToEvalException, std::string("importGlobals: ") +
                                     global->module.toString() + "." +
                                     global->base.toString());
         }
         globals[global->name] = inst->globals[globalExport->value];
       } else {
-        throw FailToEvalException(std::string("importGlobals: ") +
+        B_THROW1(FailToEvalException, std::string("importGlobals: ") +
                                   global->module.toString() + "." +
                                   global->base.toString());
       }
@@ -223,7 +224,7 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
         if (import->base == "environ_sizes_get") {
           if (arguments.size() != 2 || arguments[0].type != Type::i32 ||
               import->getResults() != Type::i32) {
-            throw FailToEvalException("wasi environ_sizes_get has wrong sig");
+            B_THROW1(FailToEvalException, "wasi environ_sizes_get has wrong sig");
           }
 
           // Write out a count of i32(0) and return __WASI_ERRNO_SUCCESS (0).
@@ -234,7 +235,7 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
         if (import->base == "environ_get") {
           if (arguments.size() != 2 || arguments[0].type != Type::i32 ||
               import->getResults() != Type::i32) {
-            throw FailToEvalException("wasi environ_get has wrong sig");
+            B_THROW1(FailToEvalException, "wasi environ_get has wrong sig");
           }
 
           // Just return __WASI_ERRNO_SUCCESS (0).
@@ -244,7 +245,7 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
         if (import->base == "args_sizes_get") {
           if (arguments.size() != 2 || arguments[0].type != Type::i32 ||
               import->getResults() != Type::i32) {
-            throw FailToEvalException("wasi args_sizes_get has wrong sig");
+            B_THROW1(FailToEvalException, "wasi args_sizes_get has wrong sig");
           }
 
           // Write out an argc of i32(0) and return a __WASI_ERRNO_SUCCESS (0).
@@ -255,7 +256,7 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
         if (import->base == "args_get") {
           if (arguments.size() != 2 || arguments[0].type != Type::i32 ||
               import->getResults() != Type::i32) {
-            throw FailToEvalException("wasi args_get has wrong sig");
+            B_THROW1(FailToEvalException, "wasi args_get has wrong sig");
           }
 
           // Just return __WASI_ERRNO_SUCCESS (0).
@@ -274,7 +275,7 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
     } else if (import->module == WASI && !ignoreExternalInput) {
       extra = RECOMMENDATION "consider --ignore-external-input";
     }
-    throw FailToEvalException(std::string("call import: ") +
+    B_THROW1(FailToEvalException, std::string("call import: ") +
                               import->module.toString() + "." +
                               import->base.toString() + extra);
   }
@@ -291,7 +292,7 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
 
     auto* table = wasm->getTableOrNull(tableName);
     if (!table) {
-      throw FailToEvalException("callTable on non-existing table");
+      B_THROW1(FailToEvalException, "callTable on non-existing table");
     }
 
     // Look through the segments and find the function. Segments can overlap,
@@ -321,14 +322,14 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
         if (auto* get = entry->dynCast<RefFunc>()) {
           targetFunc = get->func;
         } else {
-          throw FailToEvalException(
+          B_THROW1(FailToEvalException, 
             std::string("callTable on uninitialized entry"));
         }
       }
     }
 
     if (!targetFunc.is()) {
-      throw FailToEvalException(
+      B_THROW1(FailToEvalException, 
         std::string("callTable on index not found in static segments: ") +
         std::to_string(index));
     }
@@ -337,24 +338,24 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
     // imported, fail.
     auto* func = wasm->getFunction(targetFunc);
     if (func->type != sig) {
-      throw FailToEvalException(std::string("callTable signature mismatch: ") +
+      B_THROW1(FailToEvalException, std::string("callTable signature mismatch: ") +
                                 targetFunc.toString());
     }
     if (!func->imported()) {
       return instance.callFunctionInternal(targetFunc, arguments);
     } else {
-      throw FailToEvalException(
+      B_THROW1(FailToEvalException, 
         std::string("callTable on imported function: ") +
         targetFunc.toString());
     }
   }
 
   Index tableSize(Name tableName) override {
-    throw FailToEvalException("table size");
+    B_THROW1(FailToEvalException, "table size");
   }
 
   Literal tableLoad(Name tableName, Index index) override {
-    throw FailToEvalException("table.get: TODO");
+    B_THROW1(FailToEvalException, "table.get: TODO");
   }
 
   // called during initialization
@@ -409,28 +410,28 @@ struct CtorEvalExternalInterface : EvallingModuleRunner::ExternalInterface {
   bool growMemory(Name memoryName,
                   Address /*oldSize*/,
                   Address /*newSize*/) override {
-    throw FailToEvalException("grow memory");
+    B_THROW1(FailToEvalException, "grow memory");
   }
 
   bool growTable(Name /*name*/,
                  const Literal& /*value*/,
                  Index /*oldSize*/,
                  Index /*newSize*/) override {
-    throw FailToEvalException("grow table");
+    B_THROW1(FailToEvalException, "grow table");
   }
 
   void trap(const char* why) override {
-    throw FailToEvalException(std::string("trap: ") + why);
+    B_THROW1(FailToEvalException, std::string("trap: ") + why);
   }
 
   void hostLimit(const char* why) override {
-    throw FailToEvalException(std::string("trap: ") + why);
+    B_THROW1(FailToEvalException, std::string("trap: ") + why);
   }
 
   void throwException(const WasmException& exn) override {
     std::stringstream ss;
     ss << "exception thrown: " << exn;
-    throw FailToEvalException(ss.str());
+    B_THROW1(FailToEvalException, ss.str());
   }
 
 private:
@@ -743,9 +744,9 @@ EvalCtorOutcome evalCtor(EvallingModuleRunner& instance,
     Index successes = 0;
     for (auto* curr : block->list) {
       Flow flow;
-      try {
+      B_TRY {
         flow = instance.visit(curr);
-      } catch (FailToEvalException& fail) {
+      } B_CATCH (FailToEvalException& fail, {
         if (!quiet) {
           if (successes == 0) {
             std::cout << "  ...stopping (in block) since could not eval: "
@@ -757,7 +758,7 @@ EvalCtorOutcome evalCtor(EvallingModuleRunner& instance,
           }
         }
         break;
-      }
+      })
 
       // So far so good! Apply the results.
       interface.applyToModule();
@@ -841,14 +842,14 @@ EvalCtorOutcome evalCtor(EvallingModuleRunner& instance,
   // optimize that.
 
   Literals results;
-  try {
+  B_TRY {
     results = instance.callFunction(funcName, params);
-  } catch (FailToEvalException& fail) {
+  } B_CATCH (FailToEvalException& fail, {
     if (!quiet) {
       std::cout << "  ...stopping since could not eval: " << fail.why << "\n";
     }
     return EvalCtorOutcome();
-  }
+  })
 
   // Success! Apply the results.
   interface.applyToModule();
@@ -872,7 +873,7 @@ void evalCtors(Module& wasm,
   linkedInstances[envModule->name] = envInstance;
 
   CtorEvalExternalInterface interface(linkedInstances);
-  try {
+  B_TRY {
     // create an instance for evalling
     EvallingModuleRunner instance(wasm, &interface, linkedInstances);
     // go one by one, in order, until we fail
@@ -917,14 +918,14 @@ void evalCtors(Module& wasm,
         wasm.getExport(exp->name)->value = copyName;
       }
     }
-  } catch (FailToEvalException& fail) {
+  } B_CATCH (FailToEvalException& fail, {
     // that's it, we failed to even create the instance
     if (!quiet) {
       std::cout << "  ...stopping since could not create module instance: "
                 << fail.why << "\n";
     }
     return;
-  }
+  })
 }
 
 static bool canEval(Module& wasm) {
@@ -1027,12 +1028,12 @@ int main(int argc, const char* argv[]) {
       std::cout << "reading...\n";
     }
     ModuleReader reader;
-    try {
+    B_TRY {
       reader.read(options.extra["infile"], wasm);
-    } catch (ParseException& p) {
+    } B_CATCH (ParseException& p, {
       p.dump(std::cout);
       Fatal() << "error in parsing input";
-    }
+    })
   }
 
   if (!WasmValidator().validate(wasm)) {

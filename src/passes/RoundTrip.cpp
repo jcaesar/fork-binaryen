@@ -40,13 +40,13 @@ struct RoundTrip : public Pass {
     auto input = buffer.getAsChars();
     WasmBinaryBuilder parser(*module, features, input);
     parser.setDWARF(getPassOptions().debugInfo);
-    try {
+    B_TRY {
       parser.read();
-    } catch (ParseException& p) {
+    } B_CATCH (ParseException& p, {
       p.dump(std::cerr);
       std::cerr << '\n';
       Fatal() << "error in parsing wasm binary";
-    }
+    })
   }
 };
 

@@ -771,7 +771,7 @@ def instruction_parser(new_parser=False):
         if new_parser:
             printer.print_line("return ctx.in.err(pos, \"unrecognized instruction\");")
         else:
-            printer.print_line("throw ParseException(std::string(op), s.line, s.col);")
+            printer.print_line("THROW_DUMP(ParseException(std::string(op), s.line, s.col));")
 
 
 def print_header():

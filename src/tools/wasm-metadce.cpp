@@ -27,6 +27,7 @@
 #include <memory>
 
 #include "asmjs/shared-constants.h"
+#include "exception.h"
 #include "ir/element-utils.h"
 #include "ir/module-utils.h"
 #include "pass.h"
@@ -527,12 +528,12 @@ int main(int argc, const char* argv[]) {
     }
     ModuleReader reader;
     reader.setDWARF(debugInfo);
-    try {
+    B_TRY {
       reader.read(options.extra["infile"], wasm);
-    } catch (ParseException& p) {
+    } B_CATCH (ParseException& p, {
       p.dump(std::cerr);
       Fatal() << "error in parsing wasm input";
-    }
+    })
   }
 
   if (options.passOptions.validate) {

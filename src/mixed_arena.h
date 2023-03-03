@@ -21,7 +21,9 @@
 #include <cassert>
 #include <memory>
 #include <mutex>
+#ifdef HAVE_THREADS
 #include <thread>
+#endif
 #include <type_traits>
 #include <vector>
 
@@ -70,7 +72,9 @@ struct MixedArena {
 
   size_t index = 0; // in last chunk
 
+#ifdef HAVE_THREADS
   std::thread::id threadId;
+#endif
 
   // multithreaded allocation - each arena is valid on a specific thread.
   // if we are on the wrong thread, we atomically look in the linked
@@ -78,12 +82,15 @@ struct MixedArena {
   std::atomic<MixedArena*> next;
 
   MixedArena() {
+#ifdef HAVE_THREADS
     threadId = std::this_thread::get_id();
+#endif
     next.store(nullptr);
   }
 
   // Allocate an amount of space with a guaranteed alignment
   void* allocSpace(size_t size, size_t align) {
+#ifdef HAVE_THREADS
     // the bump allocator data should not be modified by multiple threads at
     // once.
     auto myId = std::this_thread::get_id();
@@ -118,6 +125,7 @@ struct MixedArena {
       }
       return curr->allocSpace(size, align);
     }
+#endif // HAVE_THREADS
     // First, move the current index in the last chunk to an aligned position.
     index = (index + align - 1) & (-align);
     if (index + size > CHUNK_SIZE || chunks.size() == 0) {

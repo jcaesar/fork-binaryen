@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include <mutex>
 #include <set>
 #include <sstream>
 #include <unordered_set>
 
+#include "mutex.h"
 #include "ir/eh-utils.h"
 #include "ir/features.h"
 #include "ir/global-utils.h"

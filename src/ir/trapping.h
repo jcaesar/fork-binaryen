@@ -20,6 +20,7 @@
 #include <exception>
 
 #include "pass.h"
+#include "../exception.h"
 
 namespace wasm {
 
@@ -97,7 +98,7 @@ inline TrapMode trapModeFromString(std::string const& str) {
   } else if (str == "js") {
     return TrapMode::JS;
   } else {
-    throw std::invalid_argument(
+    B_THROW1(std::invalid_argument,
       "Unsupported trap mode \"" + str +
       "\". "
       "Valid modes are \"allow\", \"js\", and \"clamp\"");

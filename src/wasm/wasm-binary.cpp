@@ -141,7 +141,7 @@ void WasmBinaryWriter::finishSection(int32_t start) {
   auto adjustmentForLEBShrinking = MaxLEB32Bytes - sizeFieldSize;
   if (adjustmentForLEBShrinking) {
     // we can save some room, nice
-    assert(sizeFieldSize < MaxLEB32Bytes);
+    assert(sizeFieldSize < MaxLEB32Bytes && "file size sane");
     std::move(&o[start] + MaxLEB32Bytes,
               &o[start] + MaxLEB32Bytes + size,
               &o[start] + sizeFieldSize);
@@ -158,7 +158,7 @@ void WasmBinaryWriter::finishSection(int32_t start) {
   if (binaryLocationsSizeAtSectionStart != binaryLocations.expressions.size()) {
     // We added the binary locations, adjust them: they must be relative
     // to the code section.
-    assert(binaryLocationsSizeAtSectionStart == 0);
+    assert(binaryLocationsSizeAtSectionStart == 0 && "locations relative to code section - size at section start 0");
     // The section type byte is right before the LEB for the size; we want
     // offsets that are relative to the body, which is after that section type
     // byte and the the size LEB.
@@ -2023,7 +2023,7 @@ HeapType WasmBinaryBuilder::getIndexedHeapType() {
 Type WasmBinaryBuilder::getConcreteType() {
   auto type = getType();
   if (!type.isConcrete()) {
-    throw ParseException("non-concrete type when one expected");
+    B_THROW_DUMP(ParseException("non-concrete type when one expected"));
   }
   return type;
 }
@@ -2151,7 +2151,7 @@ void WasmBinaryBuilder::readTypes() {
       case 1:
         return Mutable;
       default:
-        throw ParseException("Expected 0 or 1 for mutability");
+        B_THROW_DUMP(ParseException("Expected 0 or 1 for mutability"));
     }
   };
 
@@ -2619,7 +2619,7 @@ static int32_t readBase64VLQ(std::istream& in) {
   while (1) {
     auto ch = in.get();
     if (ch == EOF) {
-      throw MapParseException("unexpected EOF in the middle of VLQ");
+      B_THROW_DUMP(MapParseException("unexpected EOF in the middle of VLQ"));
     }
     if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch < 'g')) {
       // last number digit
@@ -2629,7 +2629,7 @@ static int32_t readBase64VLQ(std::istream& in) {
     }
     if (!(ch >= 'g' && ch <= 'z') && !(ch >= '0' && ch <= '9') && ch != '+' &&
         ch != '/') {
-      throw MapParseException("invalid VLQ digit");
+      B_THROW_DUMP(MapParseException("invalid VLQ digit"));
     }
     uint32_t digit =
       ch > '9' ? ch - 'g' : (ch >= '0' ? ch - '0' + 20 : (ch == '+' ? 30 : 31));
@@ -2661,8 +2661,8 @@ void WasmBinaryBuilder::readSourceMapHeader() {
   auto mustReadChar = [&](char expected) {
     char c = sourceMap->get();
     if (c != expected) {
-      throw MapParseException(std::string("Unexpected char: expected '") +
-                              expected + "' got '" + c + "'");
+      B_THROW_DUMP(MapParseException(std::string("Unexpected char: expected '") +
+                              expected + "' got '" + c + "'"));
     }
   };
 
@@ -2706,7 +2706,7 @@ void WasmBinaryBuilder::readSourceMapHeader() {
       while (1) {
         int ch = sourceMap->get();
         if (ch == EOF) {
-          throw MapParseException("unexpected EOF in the middle of string");
+          B_THROW_DUMP(MapParseException("unexpected EOF in the middle of string"));
         }
         if (ch == '\"') {
           break;
@@ -2719,7 +2719,7 @@ void WasmBinaryBuilder::readSourceMapHeader() {
   };
 
   if (!findField("sources")) {
-    throw MapParseException("cannot find the 'sources' field in map");
+    B_THROW_DUMP(MapParseException("cannot find the 'sources' field in map"));
   }
 
   skipWhitespace();
@@ -2736,7 +2736,7 @@ void WasmBinaryBuilder::readSourceMapHeader() {
   }
 
   if (!findField("mappings")) {
-    throw MapParseException("cannot find the 'mappings' field in map");
+    B_THROW_DUMP(MapParseException("cannot find the 'mappings' field in map"));
   }
 
   mustReadChar('\"');
@@ -2782,7 +2782,7 @@ void WasmBinaryBuilder::readNextDebugLocation() {
       break;
     }
     if (ch != ',') {
-      throw MapParseException("Unexpected delimiter");
+      B_THROW_DUMP(MapParseException("Unexpected delimiter"));
     }
 
     int32_t positionDelta = readBase64VLQ(*sourceMap);
@@ -7501,7 +7501,7 @@ void WasmBinaryBuilder::visitRefAs(RefAs* curr, uint8_t code) {
 }
 
 void WasmBinaryBuilder::throwError(std::string text) {
-  throw ParseException(text, 0, pos);
+  B_THROW_DUMP(ParseException(text, 0, pos));
 }
 
 void WasmBinaryBuilder::validateHeapTypeUsingChild(Expression* child,

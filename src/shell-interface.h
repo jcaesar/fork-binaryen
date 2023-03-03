@@ -142,7 +142,7 @@ struct ShellExternalInterface : ModuleRunner::ExternalInterface {
     } else if (import->module == ENV && import->base == EXIT) {
       // XXX hack for torture tests
       std::cout << "exit()\n";
-      throw ExitException();
+      B_THROW0(ExitException);
     } else if (auto* inst = getImportInstance(import)) {
       return inst->callExport(import->base, arguments);
     }
@@ -341,15 +341,15 @@ struct ShellExternalInterface : ModuleRunner::ExternalInterface {
 
   void trap(const char* why) override {
     std::cout << "[trap " << why << "]\n";
-    throw TrapException();
+    B_THROW0(TrapException);
   }
 
   void hostLimit(const char* why) override {
     std::cout << "[host limit " << why << "]\n";
-    throw HostLimitException();
+    B_THROW0(HostLimitException);
   }
 
-  void throwException(const WasmException& exn) override { throw exn; }
+  void throwException(const WasmException& exn) override { B_THROW_DUMP(exn); }
 };
 
 } // namespace wasm

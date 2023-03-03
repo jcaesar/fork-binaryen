@@ -26,8 +26,10 @@
 #include <condition_variable>
 #include <functional>
 #include <memory>
+#ifdef HAVE_THREADS
 #include <mutex>
 #include <thread>
+#endif
 #include <vector>
 
 #include "compiler-support.h"
@@ -48,9 +50,11 @@ class ThreadPool;
 
 class Thread {
   ThreadPool* parent;
+#ifdef HAVE_THREADS
   std::unique_ptr<std::thread> thread;
   std::mutex mutex;
   std::condition_variable condition;
+#endif // HAVE_THREADS
   bool done = false;
   std::function<ThreadWorkState()> doWork = nullptr;
 
@@ -75,6 +79,7 @@ private:
 class ThreadPool {
   std::vector<std::unique_ptr<Thread>> threads;
   bool running = false;
+#ifdef HAVE_THREADS
   std::condition_variable condition;
   std::atomic<size_t> ready;
 
@@ -85,6 +90,7 @@ class ThreadPool {
   static std::mutex workMutex;
   // A mutex for communication with the worker threads
   static std::mutex threadMutex;
+#endif // HAVE_THREADS
 
 private:
   void initialize(size_t num);

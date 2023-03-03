@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#ifdef HAVE_THREADS
+
 #include <assert.h>
 
 #include <algorithm>
@@ -226,3 +228,26 @@ bool ThreadPool::areThreadsReady() {
 }
 
 } // namespace wasm
+
+#else // HAVE_THREADS
+// Basic idea: Just immediately execute all submitted work on main
+#include "threads.h"
+
+namespace wasm {
+
+static ThreadPool dummy;
+
+ThreadPool* ThreadPool::get() { return &dummy; }
+size_t ThreadPool::size() { return 1; }
+void ThreadPool::work(std::vector<std::function<wasm::ThreadWorkState ()>>& work) {
+  for (auto task : work) {
+    task();
+  }
+}
+
+Thread::~Thread() { assert(false /*unreachable*/); }
+
+} // namespace wasm
+
+
+#endif // HAVE_THREADS

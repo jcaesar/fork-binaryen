@@ -19,6 +19,7 @@
 
 #include <fstream>
 
+#include "exception.h"
 #include "ir/module-splitting.h"
 #include "ir/names.h"
 #include "support/file.h"
@@ -41,16 +42,16 @@ void parseInput(Module& wasm, const WasmSplitOptions& options) {
   options.applyFeatures(wasm);
   ModuleReader reader;
   reader.setProfile(options.profile);
-  try {
+  B_TRY {
     reader.read(options.inputFiles[0], wasm);
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     std::cerr << '\n';
     Fatal() << "error parsing wasm";
-  } catch (std::bad_alloc&) {
+  }) B_CATCH (std::bad_alloc&, {
     Fatal() << "error building module, std::bad_alloc (possibly invalid "
                "request for silly amounts of memory)";
-  }
+  })
 
   if (options.passOptions.validate && !WasmValidator().validate(wasm)) {
     Fatal() << "error validating input";

@@ -23,6 +23,7 @@
 
 #include "abi/js.h"
 #include "ir/trapping.h"
+#include "exception.h"
 #include "support/colors.h"
 #include "support/debug.h"
 #include "support/file.h"
@@ -234,17 +235,17 @@ int main(int argc, const char* argv[]) {
     // will still parse the start function even in this mode.
     reader.setSkipFunctionBodies(true);
   }
-  try {
+  B_TRY {
     reader.read(infile, wasm, inputSourceMapFilename);
-  } catch (ParseException& p) {
+  } B_CATCH (ParseException& p, {
     p.dump(std::cerr);
     std::cerr << '\n';
     Fatal() << "error in parsing input";
-  } catch (MapParseException& p) {
+  }) B_CATCH (MapParseException& p, {
     p.dump(std::cerr);
     std::cerr << '\n';
     Fatal() << "error in parsing wasm source map";
-  }
+  })
 
   BYN_TRACE_WITH_TYPE("emscripten-dump", "Module before:\n");
   BYN_DEBUG_WITH_TYPE("emscripten-dump", std::cerr << &wasm);

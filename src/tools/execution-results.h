@@ -99,7 +99,7 @@ struct ExecutionResults {
   // get results of execution
   void get(Module& wasm) {
     LoggingExternalInterface interface(loggings);
-    try {
+    B_TRY {
       ModuleRunner instance(wasm, &interface);
       // execute all exported methods (that are therefore preserved through
       // opts)
@@ -130,9 +130,9 @@ struct ExecutionResults {
           }
         }
       }
-    } catch (const TrapException&) {
+    } B_CATCH (const TrapException&, {
       // may throw in instance creation (init of offsets)
-    }
+    })
   }
 
   // get current results and check them against previous ones
@@ -215,17 +215,17 @@ struct ExecutionResults {
 
   FunctionResult run(Function* func, Module& wasm) {
     LoggingExternalInterface interface(loggings);
-    try {
+    B_TRY {
       ModuleRunner instance(wasm, &interface);
       return run(func, wasm, instance);
-    } catch (const TrapException&) {
+    } B_CATCH (const TrapException&, {
       // may throw in instance creation (init of offsets)
       return {};
-    }
+    })
   }
 
   FunctionResult run(Function* func, Module& wasm, ModuleRunner& instance) {
-    try {
+    B_TRY {
       // call the method
       Literals arguments;
       for (const auto& param : func->getParams()) {
@@ -238,17 +238,17 @@ struct ExecutionResults {
         arguments.push_back(Literal::makeZero(param));
       }
       return instance.callFunction(func->name, arguments);
-    } catch (const TrapException&) {
+    } B_CATCH (const TrapException&, {
       return Trap{};
-    } catch (const WasmException& e) {
+    }) B_CATCH (const WasmException& e, {
       std::cout << "[exception thrown: " << e << "]" << std::endl;
       return Exception{};
-    } catch (const HostLimitException&) {
+    }) B_CATCH (const HostLimitException&, {
       // This should be ignored and not compared with, as optimizations can
       // change whether a host limit is reached.
       ignore = true;
       return {};
-    }
+    })
   }
 };
 

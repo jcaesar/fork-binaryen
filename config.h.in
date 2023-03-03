@@ -1,1 +1,2 @@
 #cmakedefine PROJECT_VERSION "${PROJECT_VERSION}"
+#cmakedefine HAVE_THREADS "${HAVE_THREADS}"
